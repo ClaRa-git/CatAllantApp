@@ -1,0 +1,162 @@
+<style>
+#erd svg.erDiagram .divider path { stroke-opacity: 0.5; }
+#erd svg.erDiagram .row-rect-odd path,
+#erd svg.erDiagram .row-rect-odd rect,
+#erd svg.erDiagram .row-rect-even path,
+#erd svg.erDiagram .row-rect-even rect { stroke: none !important; }
+
+#notes {
+  margin-top: 24px;
+  font-family: "Anthropic Sans", sans-serif;
+  line-height: 1.6;
+}
+
+#notes h2 {
+  margin-bottom: 12px;
+}
+
+#notes h3 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+</style>
+
+<div id="erd"></div>
+
+<div id="notes">
+  <h2>Notes sur le MCD</h2>
+
+  <h3>BREED</h3>
+  <p>
+    L'entité <strong>BREED</strong> représente les races de chats fournies par
+    <em>The Cat API</em>. Ces données constituent une source externe utilisée en
+    lecture seule par l'application. Afin d'améliorer les performances et de
+    limiter les appels réseau, les informations récupérées sont mises en cache
+    localement.
+  </p>
+
+  <h3>FAVORITE</h3>
+  <p>
+    L'entité <strong>FAVORITE</strong> permet de stocker les préférences de
+    l'utilisateur concernant les races de chats. Elle constitue une extension
+    locale de <strong>BREED</strong> en ajoutant notamment une note
+    (<code>rating</code>) et un indicateur de favori
+    (<code>isFavorite</code>). Toutes les races n'étant pas nécessairement
+    évaluées ou marquées comme favorites, la relation avec
+    <strong>BREED</strong> est de cardinalité <strong>0..1</strong>.
+  </p>
+
+  <h3>MYCAT</h3>
+  <p>
+    L'entité <strong>MYCAT</strong> représente les chats enregistrés par
+    l'utilisateur dans l'application. Un chat peut être associé à une race
+    existante provenant de <strong>BREED</strong> grâce à l'attribut
+    <code>breedId</code>. Toutefois, afin de permettre l'enregistrement de chats
+    dont la race n'est pas présente dans l'API ou dont l'utilisateur souhaite
+    personnaliser l'intitulé, l'attribut <code>customBreedName</code> est
+    également disponible. La relation entre <strong>MYCAT</strong> et
+    <strong>BREED</strong> est donc optionnelle.
+  </p>
+</div>
+
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+
+await document.fonts.ready;
+
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+  },
+});
+
+const src =
+"erDiagram\n" +
+"  BREED ||--o| FAVORITE : marquee\n" +
+"  BREED ||--o{ MYCAT : race\n" +
+"  BREED {\n" +
+"    string id\n" +
+"    string name\n" +
+"    string origin\n" +
+"    string description\n" +
+"    string wikipediaUrl\n" +
+"    string referenceImageId\n" +
+"    int affectionLevel\n" +
+"    int energyLevel\n" +
+"    string weightMetric\n" +
+"  }\n" +
+"  FAVORITE {\n" +
+"    string breedId\n" +
+"    string name\n" +
+"    string imageId\n" +
+"    float rating\n" +
+"    boolean isFavorite\n" +
+"  }\n" +
+"  MYCAT {\n" +
+"    int id\n" +
+"    string name\n" +
+"    string breedId\n" +
+"    string customBreedName\n" +
+"    string photoUri\n" +
+"    int age\n" +
+"    float weight\n" +
+"    string notes\n" +
+"  }\n";
+
+const { svg } = await mermaid.render('erd-svg', src);
+document.getElementById('erd').innerHTML = svg;
+
+document.querySelectorAll('#erd svg.erDiagram .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+
+  if (!nums || nums.length < 8) return;
+
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  const w = Math.max(...xs) - x;
+  const h = Math.max(...ys) - y;
+
+  const rect = document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'rect'
+  );
+
+  rect.setAttribute('x', x);
+  rect.setAttribute('y', y);
+  rect.setAttribute('width', w);
+  rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) {
+      rect.setAttribute(a, firstPath.getAttribute(a));
+    }
+  }
+
+  firstPath.replaceWith(rect);
+});
+
+document
+  .querySelectorAll(
+    '#erd svg.erDiagram .row-rect-odd path, #erd svg.erDiagram .row-rect-even path'
+  )
+  .forEach(p => {
+    p.setAttribute('stroke', 'none');
+  });
+</script>

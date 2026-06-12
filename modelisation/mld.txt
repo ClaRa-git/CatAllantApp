@@ -1,0 +1,31 @@
+BREED (
+    id (PK),
+    name,
+    origin,
+    description,
+    wikipediaUrl,
+    referenceImageId,
+    affectionLevel,
+    energyLevel,
+    weightMetric,
+    weightImperial
+)
+
+FAVORITE (
+    breedId (PK, FK -> BREED.id),
+    name,
+    imageId,
+    rating,
+    isFavorite
+)
+
+MY_CAT (
+    id (PK),
+    name,
+    breedId (FK -> BREED.id, nullable),
+    customBreedName (nullable),
+    photoUri (nullable),
+    age (nullable),
+    weight (nullable),
+    notes (nullable)
+)
